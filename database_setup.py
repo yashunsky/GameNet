@@ -6,6 +6,10 @@ import sys
 DB_NAME = 'GameNet.db'
 SALT = 'GameNetSalt'
 
+def salt_password(password):
+    salted = (SALT + password).encode('utf-8')
+    return sha512(salted).hexdigest()
+
 def create_tables(connection):
     cursor = connection.cursor()
     query = '''
@@ -108,17 +112,92 @@ def create_tables(connection):
     connection.commit()
 
 def add_user(connection, username, password):
-    salted = (SALT + password).encode('utf-8')
-    password = sha512(salted).hexdigest()
+    password = salt_password(password)
     cursor = connection.cursor()
 
     query = '''
         INSERT INTO `users` (`name`, `password`)
-        VALUES ('{name}', '{password}');
-        '''.format(name=username, password=password)
-    cursor.execute(query)
+        VALUES (?, ?);
+        '''
+    cursor.execute(query, (username, password))
 
     connection.commit()
+
+    return cursor.lastrowid
+
+def add_group(connection, name):
+    cursor = connection.cursor()
+
+    query = '''
+        INSERT INTO `groups` (`name`)
+        VALUES (?);
+        '''
+    cursor.execute(query, name)
+
+    connection.commit()
+
+    return cursor.lastrowid
+
+def add_membership(connection, user_id, group_id):
+    cursor = connection.cursor()
+
+    query = '''
+        INSERT INTO `membership` (`user_id`, `group_id`)
+        VALUES (?, ?);
+        '''
+    cursor.execute(query, (user_id, group_id))
+
+    connection.commit()
+
+    return cursor.lastrowid
+
+def add_tag(connection, name, parent_id):
+    cursor = connection.cursor()
+
+    query = '''
+        INSERT INTO `tags` (`name`, `parent_id`)
+        VALUES (?, ?);
+        '''
+    cursor.execute(query, (name, parent_id))
+
+    connection.commit()
+
+    return cursor.lastrowid
+
+def add_document(connection, sender_id, user_recipient_id,
+                 group_recipient_id, access_password,
+                 header, data):
+    cursor = connection.cursor()
+
+    password = salt_password(access_password)
+
+    query = '''
+        INSERT INTO `documents` (`sender_id`, `user_recipient_id`,
+                                 `group_recipient_id`,
+                                 `access_password`, `header`, `data`)
+        VALUES (?, ?, ?, ?, ?, ?);
+        '''
+    cursor.execute(query, (sender_id, user_recipient_id,
+                           group_recipient_id, password,
+                           header, data))
+
+    connection.commit()
+
+    return cursor.lastrowid
+
+def add_doc_tag(connection, document_id, tag_id):
+    cursor = connection.cursor()
+
+    query = '''
+        INSERT INTO `doc_tags` (`document_id`, `tag_id`)
+        VALUES (?, ?);
+        '''
+    cursor.execute(query, (document_id, tag_id))
+
+    connection.commit()
+
+    return cursor.lastrowid
+
 
 if __name__ == '__main__':
 
@@ -134,3 +213,25 @@ if __name__ == '__main__':
             username = input('Username: ')
             password = getpass()
             add_user(connection, username, password)
+
+        elif sys.argv[1] == 'add_tag':
+            name = input('Tag name: ')
+            parent_id = int(input('Parent ID: '))
+            print(add_tag(connection, name, parent_id))
+
+        elif sys.argv[1] == 'add_document':
+            sender_id = int(input('Sender ID: '))
+            user_recipient_id = int(input('User recepient ID: '))
+            group_recipient_id = int(input('Group recepient ID: '))
+            access_password = getpass()
+            header = input('Header: ')
+            data = input('Data: ')
+            print(add_document(connection, sender_id, user_recipient_id,
+                  group_recipient_id, access_password,
+                  header, data))
+
+        elif sys.argv[1] == 'add_doc_tag':
+
+            document_id = int(input('Document ID: '))
+            tag_id = int(input('tag ID: '))
+            print(add_doc_tag(connection, document_id, tag_id))

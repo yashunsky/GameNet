@@ -63,8 +63,8 @@ class MainHandler(BaseHandler):
             self.redirect("/login")
             return
         user_id = tornado.escape.xhtml_escape(self.current_user)
-        items = [user_id, str(self.db), "Item 3"]
-        self.render("templates/index.html", title="My title", items=items)
+        self.render("templates/index.html", title="Main page",
+                    user_id=user_id)
 
 class LoginHandler(BaseHandler):
     def get(self):

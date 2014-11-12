@@ -1,16 +1,18 @@
 from sqlite3 import connect
 from hashlib import sha512
-
+from getpass import getpass
 import sys
 
 DB_NAME = 'GameNet.db'
+SALT = 'GameNetSalt'
 
-def create_tables(cursor):
+def create_tables(connection):
+    cursor = connection.cursor()
     query = '''
         CREATE TABLE `users` (
             `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
             `name` TEXT NOT NULL,
-            `pass` TEXT NOT NULL
+            `password` TEXT NOT NULL
             );
         '''
     cursor.execute(query)
@@ -103,18 +105,32 @@ def create_tables(cursor):
         '''
     cursor.execute(query)
 
+    connection.commit()
+
+def add_user(connection, username, password):
+    salted = (SALT + password).encode('utf-8')
+    password = sha512(salted).hexdigest()
+    cursor = connection.cursor()
+
+    query = '''
+        INSERT INTO `users` (`name`, `password`)
+        VALUES ('{name}', '{password}');
+        '''.format(name=username, password=password)
+    cursor.execute(query)
+
+    connection.commit()
 
 if __name__ == '__main__':
 
-    # hashed_password = hashlib.sha512('aaa').hexdigest()
-    # print len(hashed_password)
-    # exit()
+    if len(sys.argv) < 2:
+        quit()
 
-    connection = connect(DB_NAME)
-    cursor = connection.cursor()
+    with connect(DB_NAME) as connection:
     
-    if sys.argv[0] == 'create_tables':
-        create_tables(cursor)
-        connection.commit()
+        if sys.argv[1] == 'create_tables':
+            create_tables(connection)
 
-    connection.close()
+        elif sys.argv[1] == 'add_user':
+            username = input('Username: ')
+            password = getpass()
+            add_user(connection, username, password)

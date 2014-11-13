@@ -38,7 +38,8 @@ class Application(tornado.web.Application):
             (r"/", MainHandler),
             (r"/login", LoginHandler),
             (r"/logout", LogoutHandler),
-            (r"/tags", TreeHandler)
+            (r"/tags/(.*)", TagsHandler),
+            (r"/tags", TagsHandler)
         ]
         settings = dict(
             cookie_secret="__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
@@ -85,12 +86,21 @@ class LogoutHandler(BaseHandler):
         self.set_secure_cookie("user_id", '')
         self.redirect("/")
 
-class TreeHandler(BaseHandler):
-    def get(self):
-        user_id = int(self.current_user)
-        tag_id = 1
-        children_tree = get_tag_branch(self.db, tag_id, user_id)
+class TagsHandler(BaseHandler):
+    def get(self, tag_id=None):
+        user_id = self.current_user
+        recursive = 'full' in self.request.arguments        
+        (parent_branch,
+         self_tag,
+         children_tree) = get_tag_branch(self.db, tag_id, user_id, recursive)
+
+
+
+        if self_tag is None:
+            self_tag = ['', '', '']
         self.render("templates/tags.html", title="Main page",
+                    parent_branch=parent_branch,
+                    self_tag=self_tag,
                     children_tree=children_tree)
 
 def main():

@@ -1,12 +1,21 @@
 <html>
   <body>
+    <h2>Parents</h2><ul>
+      {% for parent in parent_branch %}
+        {% block parent %}
+          <li>{{ escape(parent[1]) }}</li>
+        {% end %}
+      {% end %}
+
+    </ul>    
+    <h2>Tag name</h2>
+      {{ self_tag[1] }}
     <h2>Children</h2><ul>
       {% for child in children_tree %}
         {% block child %}
           <li>{{ escape(child[1]) }}</li>
         {% end %}
       {% end %}
-
     </ul>
   </body>
 </html>

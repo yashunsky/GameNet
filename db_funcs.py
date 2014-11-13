@@ -211,6 +211,24 @@ def auth(connection, username, password):
 
 def get_tag_branch(connection, tag_id, user_id):
 
-    return ':DK'
+    cursor = connection.cursor()
+
+    query = '''
+        WITH RECURSIVE
+          is_child(n) AS (
+            VALUES(?)
+            UNION
+            SELECT id FROM tags, is_child
+             WHERE tags.parent_id=is_child.n
+          )
+        SELECT id, name, parent_id FROM tags
+        WHERE tags.id IN is_child;
+    '''
+    cursor.execute(query, (user_id,))
+
+    children_tree = cursor.fetchall()
+    print(children_tree)
+
+    return children_tree
 
 

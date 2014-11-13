@@ -27,7 +27,7 @@ from sqlite3 import connect
 
 from database_setup import DB_NAME
 
-from db_funcs import auth
+from db_funcs import auth, get_tag_branch
 
 define("port", default=8888, help="run on the given port", type=int)
 
@@ -38,7 +38,7 @@ class Application(tornado.web.Application):
             (r"/", MainHandler),
             (r"/login", LoginHandler),
             (r"/logout", LogoutHandler),
-            (r"/tree", TreeHandler)
+            (r"/tags", TreeHandler)
         ]
         settings = dict(
             cookie_secret="__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
@@ -87,11 +87,11 @@ class LogoutHandler(BaseHandler):
 
 class TreeHandler(BaseHandler):
     def get(self):
-        tree = ':)'
-        self.render("templates/tree.html", title="Main page",
-                    tree=tree)
-
-
+        user_id = int(self.current_user)
+        tag_id = 1
+        children_tree = get_tag_branch(self.db, tag_id, user_id)
+        self.render("templates/tags.html", title="Main page",
+                    children_tree=children_tree)
 
 def main():
     parse_command_line()

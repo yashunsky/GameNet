@@ -101,7 +101,8 @@ class TagsHandler(BaseHandler):
         self.render("templates/tags.html", title="Main page",
                     parent_branch=parent_branch,
                     self_tag=self_tag,
-                    children_tree=children_tree)
+                    children_tree=children_tree,
+                    recursive='full' if recursive else '')
 
 def main():
     parse_command_line()

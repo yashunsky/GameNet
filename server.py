@@ -27,7 +27,7 @@ from sqlite3 import connect
 
 from database_setup import DB_NAME
 
-from db_funcs import auth, get_tag_branch
+from db_funcs import auth, get_tag_branch, add_tag
 
 define("port", default=8888, help="run on the given port", type=int)
 
@@ -39,7 +39,8 @@ class Application(tornado.web.Application):
             (r"/login", LoginHandler),
             (r"/logout", LogoutHandler),
             (r"/tags/(.*)", TagsHandler),
-            (r"/tags", TagsHandler)
+            (r"/tags", TagsHandler),
+            (r"/add_tag", AddTagHandler)
         ]
         settings = dict(
             cookie_secret="__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
@@ -103,6 +104,26 @@ class TagsHandler(BaseHandler):
                     self_tag=self_tag,
                     children_tree=children_tree,
                     recursive='full' if recursive else '')
+
+class AddTagHandler(BaseHandler):
+    def get(self):
+        self.redirect("/tags")
+
+    def post(self):
+        name = self.get_argument("name")
+        parent_id = self.get_argument("parent_id")
+
+        if parent_id:
+            parent_id = int(parent_id)
+        else:
+            parent_id = None
+
+        add_tag(self.db, name, parent_id)
+
+        if parent_id == None:
+            parent_id = ''
+        self.redirect("/tags/%s" % parent_id)
+
 
 def main():
     parse_command_line()

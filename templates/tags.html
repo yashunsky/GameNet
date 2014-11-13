@@ -12,16 +12,23 @@
     {% end %}
     {%  if self_tag[0] %}
     <h2>Tag name</h2>
-      <a href="/tags/{{ escape(str(self_tag[0])) }}?{{ recursive }}">{{ self_tag[1] }}</a>
+      {{ self_tag[1] }}
     {% end %}
-    {% if children_tree %}
+
     <h2>Children</h2><ul>
+      Add new:
+      <form action="/add_tag" method="post">
+          <input type="text" name="name">
+          <input type="hidden" name="parent_id" value={{ escape(str(self_tag[0])) }}>
+          <input type="submit" value="Add">
+      </form>
+
       {% for child in children_tree %}
         {% block child %}
           <li><a href="/tags/{{ escape(str(child[0])) }}?{{ recursive }}">{{ escape(child[1]) }}</a></li>
         {% end %}
       {% end %}
     </ul>
-    {% end %}
+
   </body>
 </html>

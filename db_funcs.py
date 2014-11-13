@@ -216,15 +216,16 @@ def get_tag_branch(connection, tag_id, user_id):
     query = '''
         WITH RECURSIVE
           is_child(n) AS (
-            VALUES(?)
+            VALUES(:tag_id)
             UNION
             SELECT id FROM tags, is_child
              WHERE tags.parent_id=is_child.n
           )
         SELECT id, name, parent_id FROM tags
-        WHERE tags.id IN is_child;
+        WHERE tags.id IN is_child
+        AND NOT tags.id=:tag_id;
     '''
-    cursor.execute(query, (user_id,))
+    cursor.execute(query, {'tag_id': tag_id})
 
     children_tree = cursor.fetchall()
     print(children_tree)

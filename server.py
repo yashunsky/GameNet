@@ -38,6 +38,7 @@ class Application(tornado.web.Application):
             (r"/", MainHandler),
             (r"/login", LoginHandler),
             (r"/logout", LogoutHandler),
+            (r"/tree", TreeHandler)
         ]
         settings = dict(
             cookie_secret="__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
@@ -83,6 +84,13 @@ class LogoutHandler(BaseHandler):
     def get(self):
         self.set_secure_cookie("user_id", '')
         self.redirect("/")
+
+class TreeHandler(BaseHandler):
+    def get(self):
+        tree = ':)'
+        self.render("templates/tree.html", title="Main page",
+                    tree=tree)
+
 
 
 def main():

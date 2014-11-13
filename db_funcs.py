@@ -209,5 +209,8 @@ def auth(connection, username, password):
     
     return str(answer[0]) if answer is not None else ''
 
+def get_tag_branch(connection, tag_id, user_id):
+
+    return ':DK'
 
 

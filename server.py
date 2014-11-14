@@ -97,7 +97,7 @@ class TagsHandler(BaseHandler):
          self_tag,
          children_tree) = get_tag_branch(self.db, tag_id, user_id, recursive)
 
-        users_access = get_tag_access(self.db, None)
+        access_keys, users_access = get_tag_access(self.db, tag_id)
 
         if self_tag is None:
             self_tag = ['', '', '']
@@ -106,7 +106,8 @@ class TagsHandler(BaseHandler):
                     self_tag=self_tag,
                     children_tree=children_tree,
                     recursive='full' if recursive else '',
-                    users_access=users_access)
+                    users_access=users_access,
+                    access_keys=access_keys)
 
 class AddTagHandler(BaseHandler):
     def get(self):

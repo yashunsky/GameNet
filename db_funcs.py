@@ -11,7 +11,7 @@ def create_tables(connection):
     query = '''
         CREATE TABLE `users` (
             `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-            `name` TEXT NOT NULL,
+            `name` TEXT UNIQUE NOT NULL,
             `password` TEXT NOT NULL
             );
         '''
@@ -319,9 +319,31 @@ def get_tag_branch(connection, tag_id, user_id, recursive=False):
 
     return parent_branch, self_tag, children_tree
 
-def get_tag_access(connection, tag_id, user_id=None):
+def get_tag_access(connection, tag_id, user_id=None, group_id=None):
     cursor = connection.cursor()
-    return {}
+    
+    keys = ['user_id', 'read', 'write', 'view_log',
+            'delete_log', 'modify_log', 'view_header']
+    key_string = ', '.join(['access.%s' % key for key in keys])
+    
+    target = 'user'
+    additional_condition = ''
+
+    query = '''
+        SELECT users.name, {key_string} FROM {target}_access AS access
+        INNER JOIN users ON users.id=access.user_id
+        WHERE `tag_id`=:tag_id {additional_condition};
+    '''.format(key_string=key_string,
+               target=target,
+               additional_condition=additional_condition)
+
+    cursor.execute(query, {'tag_id': tag_id})
+
+    keys.insert(0, 'name')
+
+    answer = cursor.fetchall()
+
+    return keys, answer
 
 
 

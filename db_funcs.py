@@ -295,4 +295,9 @@ def get_tag_branch(connection, tag_id, user_id, recursive=False):
 
     return parent_branch, self_tag, children_tree
 
+def get_tag_access(connection, tag_id, user_id=None):
+    cursor = connection.cursor()
+    return {}
+
+
 

@@ -95,7 +95,7 @@ class TagsHandler(BaseHandler):
          self_tag,
          children_tree) = get_tag_branch(self.db, tag_id, user_id, recursive)
 
-
+        users_access = {'user1': {'read': '0', 'write': '-1'}, 'user2': {'read': '1', 'write': '0'}}
 
         if self_tag is None:
             self_tag = ['', '', '']
@@ -103,7 +103,8 @@ class TagsHandler(BaseHandler):
                     parent_branch=parent_branch,
                     self_tag=self_tag,
                     children_tree=children_tree,
-                    recursive='full' if recursive else '')
+                    recursive='full' if recursive else '',
+                    users_access=users_access)
 
 class AddTagHandler(BaseHandler):
     def get(self):

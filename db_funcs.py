@@ -29,7 +29,8 @@ def create_tables(connection):
         CREATE TABLE `membership` (
             `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
             `user_id` INTEGER NOT NULL,
-            `group_id` INTEGER NOT NULL
+            `group_id` INTEGER NOT NULL,
+            UNIQUE (`user_id`, `group_id`)
             );
         '''
     cursor.execute(query)
@@ -70,7 +71,8 @@ def create_tables(connection):
             `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
             `document_id` INTEGER NOT NULL,
             `user_id` INTEGER NOT NULL,
-            `action` TEXT
+            `action` TEXT,
+            `timestamp` TEXT
             );
         '''
     cursor.execute(query)
@@ -85,7 +87,8 @@ def create_tables(connection):
             `view_log` TEXT,
             `delete_log` TEXT,
             `modify_log` TEXT,
-            `view_header` TEXT
+            `view_header` TEXT,
+            UNIQUE (`user_id`, `tag_id`)
             );
         '''
     cursor.execute(query)
@@ -100,7 +103,8 @@ def create_tables(connection):
             `view_log` TEXT,
             `delete_log` TEXT,
             `modify_log` TEXT,
-            `view_header` TEXT
+            `view_header` TEXT,
+            UNIQUE (`group_id`, `group_id`)
             );
         '''
     cursor.execute(query)

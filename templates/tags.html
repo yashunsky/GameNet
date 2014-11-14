@@ -1,4 +1,9 @@
 <html>
+  <head>
+    <style>
+     .access input {width: 60px;}
+    </style>
+  </head>
   <body>
     {% if parent_branch %}
     <h2>Parents</h2><ul>
@@ -15,16 +20,31 @@
       {{ self_tag[1] }}
     {% end %}
     <h3>Access</h3>
-      <table border='1'>
-        <tr><td>User</td><td>Access</td></tr>
-    {% for user, access in users_access.items() %}
-        <tr><td>{{ user }}</td>
-          {% for access_type, access_status in access.items() %}
-            <td>{{ access_type }}: {{ access_status }}</td>
+      <form action='/add_access' method='post' class='access'>
+        <input type='hidden' name='tag_id' value='{{ self_tag[0] }}'>
+
+
+        <table border='1'>
+          <tr><td>User</td><td>Access</td></tr>
+          {% for user, access in users_access.items() %}
+          <tr><td>{{ user }}</td>
+            {% for access_type, access_status in access.items() %}
+              <td>{{ access_type }}: {{ access_status }}</td>
+            {% end %}
+          </tr>
           {% end %}
-        </tr>
-    {% end %}
-      </table>
+
+          <tr><td>user_id:<input type='text' name='user_id' value='0'></td>
+              <td>read:<input type='text' name='read' value='0'></td>
+              <td>write:<input type='text' name='write' value='0'></td>
+              <td>view_log:<input type='text' name='view_log' value='0'></td>
+              <td>delete_log:<input type='text' name='delete_log' value='0'></td>
+              <td>modify_log:<input type='text' name='modify_log' value='0'></td>
+              <td>view_header:<input type='text' name='view_header' value='0'></td>
+              <td><input type='submit' value='add'></td>
+          </tr>
+        </table>
+      </form>      
     <h2>Children</h2><ul>
 
       {% for child in children_tree %}

@@ -164,6 +164,30 @@ def add_tag(connection, name, parent_id):
 
     return cursor.lastrowid
 
+def add_tag_access(connection, fields):
+    cursor = connection.cursor()
+
+    if 'user_id' in fields:
+        target = 'user'
+    elif 'group_id' in fields:
+        target = 'group'
+    else:
+        return None
+
+    query = '''
+        INSERT INTO `{target}_access` (`{target}_id`, `tag_id`, 
+            `read`, `write`, `view_log`, `delete_log`, 
+            `modify_log`,`view_header`
+            ) VALUES (:{target}_id, :tag_id, :read, :write, :view_log,
+            :delete_log, :modify_log, :view_log);
+        '''.format(target=target)
+    cursor.execute(query, fields)
+
+    connection.commit()
+
+    return cursor.lastrowid
+
+
 def add_document(connection, sender_id, user_recipient_id,
                  group_recipient_id, access_password,
                  header, data):

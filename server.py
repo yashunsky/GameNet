@@ -27,7 +27,8 @@ from sqlite3 import connect
 
 from database_setup import DB_NAME
 
-from db_funcs import auth, get_tag_branch, add_tag
+from db_funcs import auth, get_tag_branch, add_tag, add_tag_access
+from db_funcs import get_tag_access
 
 define("port", default=8888, help="run on the given port", type=int)
 
@@ -40,7 +41,8 @@ class Application(tornado.web.Application):
             (r"/logout", LogoutHandler),
             (r"/tags/(.*)", TagsHandler),
             (r"/tags", TagsHandler),
-            (r"/add_tag", AddTagHandler)
+            (r"/add_tag", AddTagHandler),
+            (r"/add_access", AddAccessHandler)
         ]
         settings = dict(
             cookie_secret="__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
@@ -95,7 +97,7 @@ class TagsHandler(BaseHandler):
          self_tag,
          children_tree) = get_tag_branch(self.db, tag_id, user_id, recursive)
 
-        users_access = {'user1': {'read': '0', 'write': '-1'}, 'user2': {'read': '1', 'write': '0'}}
+        users_access = get_tag_access(self.db, None)
 
         if self_tag is None:
             self_tag = ['', '', '']
@@ -124,6 +126,21 @@ class AddTagHandler(BaseHandler):
         if parent_id == None:
             parent_id = ''
         self.redirect("/tags/%s" % parent_id)
+
+class AddAccessHandler(BaseHandler):
+    def get(self):
+        self.redirect("/tags")
+
+    def post(self):
+        keys = ('user_id', 'group_id', 'tag_id', 
+            'read', 'write', 'view_log', 'delete_log', 
+            'modify_log','view_header')
+
+        fields = {key: self.get_argument(key) for key in keys
+                  if key in self.request.arguments }
+
+        add_tag_access(self.db, fields)
+        self.redirect("/tags/%s" % fields['tag_id'])
 
 
 def main():

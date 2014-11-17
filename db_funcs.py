@@ -326,8 +326,15 @@ def get_tag_access(connection, tag_id, user_id=None, group_id=None):
             'delete_log', 'modify_log', 'view_header']
     key_string = ', '.join(['access.%s' % key for key in keys])
     
-    target = 'user'
-    additional_condition = ''
+    if user_id is not None:
+        target = 'user'
+        additional_condition = 'WHERE `user_id` =:user_id'
+    elif group_id is not None:
+        target = 'group'
+        additional_condition = 'WHERE `group_id` =:group_id'
+    else:
+        target = 'user'
+        additional_condition = ''
 
     query = '''
         SELECT users.name, {key_string} FROM {target}_access AS access
@@ -337,7 +344,12 @@ def get_tag_access(connection, tag_id, user_id=None, group_id=None):
                target=target,
                additional_condition=additional_condition)
 
-    cursor.execute(query, {'tag_id': tag_id})
+    if user_id is not None:
+        cursor.execute(query, {'tag_id': tag_id, 'user_id': user_id})
+    elif group_id is not None:
+        cursor.execute(query, {'tag_id': tag_id, 'group_id': group_id})
+    else:
+        cursor.execute(query, {'tag_id': tag_id})
 
     keys.insert(0, 'name')
 
@@ -345,5 +357,56 @@ def get_tag_access(connection, tag_id, user_id=None, group_id=None):
 
     return keys, answer
 
+def check_access(connection, tag_id, user_id=None, group_id=None):
+    cursor = connection.cursor()
 
+
+    keys = ['read', 'write', 'view_log',
+            'delete_log', 'modify_log', 'view_header']
+
+    key_string = ', '.join(['`%s`' % key for key in keys])
+
+    final_select = ',\n'.join(['''(SELECT `{key}` FROM `access`
+                                  CROSS JOIN (
+                                    SELECT MAX(level) as `max_level`
+                                    FROM `access`)
+                                  WHERE `{key}`<>0 OR `level`=`max_level`
+                                  ORDER BY `level` LIMIT 1)'''.format(key=key) 
+                               for key in keys])
+
+    query = '''
+        DROP VIEW IF EXISTS `access`;
+        '''
+    cursor.execute(query)
+
+    query = '''   
+        CREATE TEMP VIEW `access` AS
+            WITH RECURSIVE
+                is_parent(level, tag_id) AS (
+                    VALUES(0, {tag_id})
+                    UNION
+                    SELECT is_parent.level+1, parent_id FROM tags, is_parent
+                    WHERE tags.id=is_parent.tag_id AND parent_id is NOT NULL
+                )
+            SELECT level, {key_string} FROM is_parent 
+            INNER JOIN user_access ON (user_access.tag_id = is_parent.tag_id 
+                                       AND user_access.user_id={user_id});
+            '''.format(key_string=key_string,
+                       tag_id=int(tag_id),
+                       user_id=int(user_id))
+
+    cursor.execute(query)
+
+    query = '''  
+        SELECT {key_string} FROM (
+            {final_select}
+        );
+    '''.format(key_string=key_string, final_select=final_select)
+    cursor.execute(query)
+
+    answer = cursor.fetchone()
+
+    answer = [access=='1' for access in answer]
+
+    return keys, answer
 

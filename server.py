@@ -28,7 +28,7 @@ from sqlite3 import connect
 from database_setup import DB_NAME
 
 from db_funcs import auth, get_tag_branch, add_tag, add_tag_access
-from db_funcs import get_tag_access
+from db_funcs import get_tag_access, check_access
 
 define("port", default=8888, help="run on the given port", type=int)
 
@@ -99,6 +99,8 @@ class TagsHandler(BaseHandler):
 
         access_keys, users_access = get_tag_access(self.db, tag_id)
 
+        user_access_keys, user_access = check_access(self.db, tag_id, user_id)
+
         if self_tag is None:
             self_tag = ['', '', '']
         self.render("templates/tags.html", title="Main page",
@@ -106,6 +108,8 @@ class TagsHandler(BaseHandler):
                     self_tag=self_tag,
                     children_tree=children_tree,
                     recursive='full' if recursive else '',
+                    user_access_keys=user_access_keys,
+                    user_access=user_access,
                     users_access=users_access,
                     access_keys=access_keys)
 

@@ -19,6 +19,10 @@
     <h2>Tag name</h2>
       {{ self_tag[1] }}
     {% end %}
+    <h3>Your access</h3>
+      {% for key, value in zip(user_access_keys, user_access) %}
+        {{ key }}: {{ str(value) }}<br>
+      {% end %}
     <h3>Access</h3>
       <form action='/add_access' method='post' class='access'>
         <input type='hidden' name='tag_id' value='{{ self_tag[0] }}'>

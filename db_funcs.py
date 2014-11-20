@@ -1,6 +1,10 @@
 from hashlib import sha512
 
 SALT = 'GameNetSalt'
+GRANTED = '1'
+DENIED = '-1'
+DEFAULT = '0'
+
 
 def salt_password(password):
     salted = (SALT + password).encode('utf-8')
@@ -357,6 +361,12 @@ def get_tag_access(connection, tag_id, user_id=None, group_id=None):
 
     return keys, answer
 
+def access_process(access, to_bool, granted=GRANTED):
+    if to_bool:
+        return [value==granted for value in access]
+    else:
+        return access
+
 def check_access(connection, tag_id, user_id=None, group_id=None, to_bool=True):
     cursor = connection.cursor()
 
@@ -392,16 +402,13 @@ def check_access(connection, tag_id, user_id=None, group_id=None, to_bool=True):
 
     query_result = cursor.fetchall()
 
-    answer = ['0']*len(keys)
+    answer = [DEFAULT]*len(keys)
     for row in query_result:
         for position, value in enumerate(row):
-            if answer[position] == '0':
+            if answer[position] == DEFAULT:
                 answer[position] = value
 
-    if to_bool:
-        answer = [value=='1' for value in answer]
-
-    return keys, answer
+    return keys, access_process(answer, to_bool)
 
 def get_user_groups(connection, user_id):
     cursor = connection.cursor()
@@ -409,16 +416,22 @@ def get_user_groups(connection, user_id):
     cursor.execute(query, {'user_id': user_id})
     return cursor.fetchall()
 
+def get_document_tags(connection, document_id):
+    cursor = connection.cursor()
+    query = '''SELECT `tag_id` FROM `doc_tags` WHERE `document_id`=:document_id;'''
+    cursor.execute(query, {'document_id': document_id})
+    return cursor.fetchall()
+
 def resolve_access(access_table):
     answer = []
 
     for column in zip(*access_table): # Matrix transpose :)
-        if '-1' in column:
-            answer.append('-1')
-        elif '1' in column:
-            answer.append('1')
+        if DENIED in column:
+            answer.append(DENIED)
+        elif GRANTED in column:
+            answer.append(GRANTED)
         else:
-            answer.append('0')
+            answer.append(DEFAULT)
 
     return answer
 
@@ -433,12 +446,21 @@ def check_tag_access(connection, tag_id, user_id, to_bool=True):
     access_table = [user_access]
     for group_id in user_groups:
         keys, group_access = check_access(connection, tag_id,
-                                     group_id=user_id, to_bool=False)
+                                     group_id=group_id[0], to_bool=False)
         access_table.append(group_access)
 
     answer = resolve_access(access_table)
-
-    if to_bool:
-        answer = [value=='1' for value in answer]
     
-    return keys, answer
+    return keys, access_process(answer, to_bool)
+
+def check_doc_access(connection, document_id, user_id, to_bool=True):
+    document_tags = get_document_tags(connection, document_id)
+
+    access_table = []
+    for tag_id in document_tags:
+        keys, answer = check_tag_access(connection, tag_id, user_id, to_bool=False)
+        access_table.extend(answer)
+
+    answer = resolve_access(access_table)
+    
+    return keys, access_process(answer, to_bool)

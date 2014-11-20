@@ -357,7 +357,7 @@ def get_tag_access(connection, tag_id, user_id=None, group_id=None):
 
     return keys, answer
 
-def check_access(connection, tag_id, user_id=None, group_id=None):
+def check_access(connection, tag_id, user_id=None, group_id=None, to_bool=True):
     cursor = connection.cursor()
 
     keys = ['read', 'write', 'view_log',
@@ -392,13 +392,53 @@ def check_access(connection, tag_id, user_id=None, group_id=None):
 
     query_result = cursor.fetchall()
 
-    access = ['0']*len(keys)
+    answer = ['0']*len(keys)
     for row in query_result:
         for position, value in enumerate(row):
-            if access[position] == '0':
-                access[position] = value
+            if answer[position] == '0':
+                answer[position] = value
 
-    answer = [value=='1' for value in access]
+    if to_bool:
+        answer = [value=='1' for value in answer]
 
     return keys, answer
 
+def get_user_groups(connection, user_id):
+    cursor = connection.cursor()
+    query = '''SELECT `group_id` FROM `membership` WHERE `user_id`=:user_id;'''
+    cursor.execute(query, {'user_id': user_id})
+    return cursor.fetchall()
+
+def resolve_access(access_table):
+    answer = []
+
+    for column in zip(*access_table): # Matrix transpose :)
+        if '-1' in column:
+            answer.append('-1')
+        elif '1' in column:
+            answer.append('1')
+        else:
+            answer.append('0')
+
+    return answer
+
+
+def check_tag_access(connection, tag_id, user_id, to_bool=True):
+    
+    user_groups = get_user_groups(connection, user_id)
+
+    keys, user_access = check_access(connection, tag_id,
+                                     user_id=user_id, to_bool=False)
+    
+    access_table = [user_access]
+    for group_id in user_groups:
+        keys, group_access = check_access(connection, tag_id,
+                                     group_id=user_id, to_bool=False)
+        access_table.append(group_access)
+
+    answer = resolve_access(access_table)
+
+    if to_bool:
+        answer = [value=='1' for value in answer]
+    
+    return keys, answer

@@ -366,47 +366,31 @@ def check_access(connection, tag_id, user_id=None, group_id=None):
 
     key_string = ', '.join(['`%s`' % key for key in keys])
 
-    final_select = ',\n'.join(['''(SELECT `{key}` FROM `access`
-                                  CROSS JOIN (
-                                    SELECT MAX(level) as `max_level`
-                                    FROM `access`)
-                                  WHERE `{key}`<>0 OR `level`=`max_level`
-                                  ORDER BY `level` LIMIT 1)'''.format(key=key) 
-                               for key in keys])
-
-    query = '''
-        DROP VIEW IF EXISTS `access`;
-        '''
-    cursor.execute(query)
-
     query = '''   
-        CREATE TEMP VIEW `access` AS
-            WITH RECURSIVE
-                is_parent(level, tag_id) AS (
-                    VALUES(0, {tag_id})
-                    UNION
-                    SELECT is_parent.level+1, parent_id FROM tags, is_parent
-                    WHERE tags.id=is_parent.tag_id AND parent_id is NOT NULL
-                )
-            SELECT level, {key_string} FROM is_parent 
-            INNER JOIN user_access ON (user_access.tag_id = is_parent.tag_id 
-                                       AND user_access.user_id={user_id});
-            '''.format(key_string=key_string,
-                       tag_id=int(tag_id),
-                       user_id=int(user_id))
+        WITH RECURSIVE
+            is_parent(level, tag_id) AS (
+                VALUES(0, :tag_id)
+                UNION
+                SELECT is_parent.level+1, parent_id FROM tags, is_parent
+                WHERE tags.id=is_parent.tag_id AND parent_id is NOT NULL
+            )
+        SELECT {key_string} FROM is_parent 
+        INNER JOIN user_access ON (user_access.tag_id = is_parent.tag_id 
+                                   AND user_access.user_id=:user_id)
+        ORDER BY `level`;
+        '''.format(key_string=key_string)
 
-    cursor.execute(query)
+    cursor.execute(query, {'tag_id': tag_id, 'user_id': user_id})
 
-    query = '''  
-        SELECT {key_string} FROM (
-            {final_select}
-        );
-    '''.format(key_string=key_string, final_select=final_select)
-    cursor.execute(query)
+    query_result = cursor.fetchall()
 
-    answer = cursor.fetchone()
+    access = ['0']*len(keys)
+    for row in query_result:
+        for position, value in enumerate(row):
+            if access[position] == '0':
+                access[position] = value
 
-    answer = [access=='1' for access in answer]
+    answer = [value=='1' for value in access]
 
     return keys, answer
 

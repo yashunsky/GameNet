@@ -360,9 +360,17 @@ def get_tag_access(connection, tag_id, user_id=None, group_id=None):
 def check_access(connection, tag_id, user_id=None, group_id=None):
     cursor = connection.cursor()
 
-
     keys = ['read', 'write', 'view_log',
             'delete_log', 'modify_log', 'view_header']
+
+    if user_id is not None:
+        target = 'user'
+        target_id = user_id
+    elif group_id is not None:
+        target = 'group'
+        target_id = group_id
+    else:
+        return keys, [False]*len(keys)
 
     key_string = ', '.join(['`%s`' % key for key in keys])
 
@@ -375,12 +383,12 @@ def check_access(connection, tag_id, user_id=None, group_id=None):
                 WHERE tags.id=is_parent.tag_id AND parent_id is NOT NULL
             )
         SELECT {key_string} FROM is_parent 
-        INNER JOIN user_access ON (user_access.tag_id = is_parent.tag_id 
-                                   AND user_access.user_id=:user_id)
+        INNER JOIN {target}_access ON ({target}_access.tag_id = is_parent.tag_id 
+                                   AND {target}_access.{target}_id=:target_id)
         ORDER BY `level`;
-        '''.format(key_string=key_string)
+        '''.format(key_string=key_string, target=target)
 
-    cursor.execute(query, {'tag_id': tag_id, 'user_id': user_id})
+    cursor.execute(query, {'tag_id': tag_id, 'target_id': target_id})
 
     query_result = cursor.fetchall()
 

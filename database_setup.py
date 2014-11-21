@@ -2,8 +2,8 @@ from sqlite3 import connect
 from getpass import getpass
 import sys
 
-from db_funcs import create_tables
-from db_funcs import add_user, add_tag, add_document, add_doc_tag
+from db.init_db import create_tables
+from db.add_entires import add_user, add_tag, add_document, add_doc_tag
 
 DB_NAME = 'GameNet.db'
 

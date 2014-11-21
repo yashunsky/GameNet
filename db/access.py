@@ -72,9 +72,6 @@ def get_tag_access(connection, tag_id, user_id=None, group_id=None):
             'delete_log', 'modify_log', 'view_header']
     key_string = ', '.join(['access.%s' % key for key in keys])
     
-
-
-
     query = '''
         SELECT users.name, {key_string} FROM {target}_access AS access
         INNER JOIN users ON users.id=access.user_id

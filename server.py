@@ -29,9 +29,9 @@ from database_setup import DB_NAME
 
 from db.access import auth, get_tag_access, check_access, check_tag_access
 
-from db.add_entries import add_tag_access
+from db.add_entries import add_tag_access, add_tag
 
-from db.struct import get_tag_branch, add_tag
+from db.structure import get_tag_branch
 
 define("port", default=8888, help="run on the given port", type=int)
 

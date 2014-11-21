@@ -3,7 +3,7 @@ from getpass import getpass
 import sys
 
 from db.init_db import create_tables
-from db.add_entires import add_user, add_tag, add_document, add_doc_tag
+from db.add_entries import add_user, add_tag, add_document, add_doc_tag
 
 DB_NAME = 'GameNet.db'
 

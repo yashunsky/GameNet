@@ -2,7 +2,10 @@
 #-*- coding: utf-8 -*-
 
 def get_descendants(cursor, tag_id, recursive=False):
-
+    '''Return tag's children (recursive=False)
+    or all descendants' tree (recursive=True)
+    `tag_id` id is also included in the result
+    '''
     if recursive:
         query = '''
             WITH RECURSIVE
@@ -27,7 +30,8 @@ def get_descendants(cursor, tag_id, recursive=False):
     return cursor.fetchall()
 
 def get_ancestries(cursor, init_parent_id, recursive=False):
-
+    '''Return tag's parent (recursive=False)
+    or all ancestries' branch (recursive=True) '''
     if recursive:
         query = '''
             WITH RECURSIVE
@@ -51,6 +55,7 @@ def get_ancestries(cursor, init_parent_id, recursive=False):
     return cursor.fetchall()
 
 def get_root(cursor, recursive=False):
+    '''Return tags, having no parent'''
     query = '''
         SELECT id, name, parent_id FROM tags
         WHERE tags.parent_id IS NULL;
@@ -62,10 +67,10 @@ def get_root(cursor, recursive=False):
 
 
 def get_tag_branch(connection, tag_id, user_id, recursive=False):
-
+    '''Return a tuple of tag's ancestries, the tag itself, and it's descendants '''
+    # TODO: if user_id is not None, the user shoud see only tags
+    # according to his access
     cursor = connection.cursor()
-
-    user_id = int(user_id)
 
     if tag_id:
         tag_id = int(tag_id)

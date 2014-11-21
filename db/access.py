@@ -89,12 +89,15 @@ def get_tag_access(connection, tag_id, user_id=None, group_id=None):
     return keys, answer
 
 def access_process(access, to_bool, granted=GRANTED):
+    '''(GRANTED, DEFAULT, DENIED) to (True, False) processing on demande'''
     if to_bool:
         return [value==granted for value in access]
     else:
         return access
 
 def check_access(connection, tag_id, user_id=None, group_id=None, to_bool=True):
+    '''Check if a specified user or group has access to the tag'''
+
     cursor = connection.cursor()
 
     keys = ['read', 'write', 'view_log',
@@ -130,6 +133,9 @@ def check_access(connection, tag_id, user_id=None, group_id=None, to_bool=True):
     query_result = cursor.fetchall()
 
     answer = [DEFAULT]*len(keys)
+
+    # Access is Granted or Denied according to the first non-Default
+    # value, met in the recieved table
     for row in query_result:
         for position, value in enumerate(row):
             if answer[position] == DEFAULT:
@@ -150,7 +156,10 @@ def get_document_tags(connection, document_id):
     return cursor.fetchall()
 
 def check_tag_access(connection, tag_id, user_id, to_bool=True):
-    
+    '''Check if the user has acccess to the tag
+    data about user's and all it's groups access is unioned and resolved
+    as written in resolve_access function
+    '''
     user_groups = get_user_groups(connection, user_id)
 
     keys, user_access = check_access(connection, tag_id,
@@ -159,7 +168,8 @@ def check_tag_access(connection, tag_id, user_id, to_bool=True):
     access_table = [user_access]
     for group_id in user_groups:
         keys, group_access = check_access(connection, tag_id,
-                                     group_id=group_id[0], to_bool=False)
+                                          group_id=group_id[0],
+                                          to_bool=False)
         access_table.append(group_access)
 
     answer = resolve_access(access_table)
@@ -167,6 +177,8 @@ def check_tag_access(connection, tag_id, user_id, to_bool=True):
     return keys, access_process(answer, to_bool)
 
 def check_doc_access(connection, document_id, user_id, to_bool=True):
+    '''Check if the user has access to the documents, according to his
+    access to each document's tag'''
     document_tags = get_document_tags(connection, document_id)
 
     access_table = []

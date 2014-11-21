@@ -5,10 +5,22 @@ GRANTED = '1'
 DENIED = '-1'
 DEFAULT = '0'
 
-
 def salt_password(password):
     salted = (SALT + password).encode('utf-8')
     return sha512(salted).hexdigest()
+
+def resolve_access(access_table):
+    answer = []
+
+    for column in zip(*access_table): # Matrix transpose :)
+        if DENIED in column:
+            answer.append(DENIED)
+        elif GRANTED in column:
+            answer.append(GRANTED)
+        else:
+            answer.append(DEFAULT)
+
+    return answer
 
 def auth(connection, username, password):
     cursor = connection.cursor()
@@ -123,20 +135,6 @@ def get_document_tags(connection, document_id):
     query = '''SELECT `tag_id` FROM `doc_tags` WHERE `document_id`=:document_id;'''
     cursor.execute(query, {'document_id': document_id})
     return cursor.fetchall()
-
-def resolve_access(access_table):
-    answer = []
-
-    for column in zip(*access_table): # Matrix transpose :)
-        if DENIED in column:
-            answer.append(DENIED)
-        elif GRANTED in column:
-            answer.append(GRANTED)
-        else:
-            answer.append(DEFAULT)
-
-    return answer
-
 
 def check_tag_access(connection, tag_id, user_id, to_bool=True):
     

@@ -1,10 +1,7 @@
 from hashlib import sha512
 
-SALT = 'GameNetSalt'
-
-def salt_password(password):
-    salted = (SALT + password).encode('utf-8')
-    return sha512(salted).hexdigest()
+from .access import SALT
+from .access import salt_password
 
 def add_user(connection, username, password):
     password = salt_password(password)
@@ -74,7 +71,7 @@ def add_tag_access(connection, fields):
             `read`, `write`, `view_log`, `delete_log`, 
             `modify_log`,`view_header`
             ) VALUES (:{target}_id, :tag_id, :read, :write, :view_log,
-            :delete_log, :modify_log, :view_log);
+            :delete_log, :modify_log, :view_header);
         '''.format(target=target)
     cursor.execute(query, fields)
 

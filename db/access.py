@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+#-*- coding: utf-8 -*-
+
 from hashlib import sha512
 
 SALT = 'GameNetSalt'
@@ -10,9 +13,13 @@ def salt_password(password):
     return sha512(salted).hexdigest()
 
 def resolve_access(access_table):
+    '''Resolve access_table: for each column,
+    the access is granted if there is at least one GRANTED entry
+    and no DENIED entries.
+    '''
     answer = []
 
-    for column in zip(*access_table): # Matrix transpose :)
+    for column in zip(*access_table): # Matrix transpose
         if DENIED in column:
             answer.append(DENIED)
         elif GRANTED in column:
@@ -23,6 +30,7 @@ def resolve_access(access_table):
     return answer
 
 def auth(connection, username, password):
+    '''Auth function. Returns user's id on success, None on failure '''
     cursor = connection.cursor()
     password = salt_password(password)
 
@@ -35,24 +43,37 @@ def auth(connection, username, password):
 
     answer = cursor.fetchone()
     
-    return str(answer[0]) if answer is not None else ''
+    return answer[0] if answer is not None else None
 
 def get_tag_access(connection, tag_id, user_id=None, group_id=None):
+    '''Returns access for the user or for the group
+       if no user_id niser group_id is specified, lists all
+       available user's access entries.
+    '''
+    # TODO a non-specified request should return users and groups,
+    # but I need to think about the implementation
+
     cursor = connection.cursor()
-    
-    keys = ['user_id', 'read', 'write', 'view_log',
-            'delete_log', 'modify_log', 'view_header']
-    key_string = ', '.join(['access.%s' % key for key in keys])
-    
+
+    params = {'tag_id': tag_id}
+    additional_condition = 'WHERE `{target}_id` =:target_id'
+
     if user_id is not None:
         target = 'user'
-        additional_condition = 'WHERE `user_id` =:user_id'
+        params['target_id'] = user_id
     elif group_id is not None:
         target = 'group'
-        additional_condition = 'WHERE `group_id` =:group_id'
+        params['target_id'] = group_id
     else:
         target = 'user'
         additional_condition = ''
+    
+    keys = ['{}_id'.format(target), 'read', 'write', 'view_log',
+            'delete_log', 'modify_log', 'view_header']
+    key_string = ', '.join(['access.%s' % key for key in keys])
+    
+
+
 
     query = '''
         SELECT users.name, {key_string} FROM {target}_access AS access
@@ -62,12 +83,7 @@ def get_tag_access(connection, tag_id, user_id=None, group_id=None):
                target=target,
                additional_condition=additional_condition)
 
-    if user_id is not None:
-        cursor.execute(query, {'tag_id': tag_id, 'user_id': user_id})
-    elif group_id is not None:
-        cursor.execute(query, {'tag_id': tag_id, 'group_id': group_id})
-    else:
-        cursor.execute(query, {'tag_id': tag_id})
+    cursor.execute(query, params)
 
     keys.insert(0, 'name')
 

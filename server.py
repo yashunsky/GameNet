@@ -84,7 +84,7 @@ class LoginHandler(BaseHandler):
 
         user_id = auth(self.db, username, password)
 
-        self.set_secure_cookie("user_id", user_id)
+        self.set_secure_cookie("user_id", str(user_id))
         self.redirect("/")
 
 class LogoutHandler(BaseHandler):

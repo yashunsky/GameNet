@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+#-*- coding: utf-8 -*-
 
 def get_descendants(cursor, tag_id, recursive=False):
 

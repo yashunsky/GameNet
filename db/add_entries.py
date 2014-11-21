@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+#-*- coding: utf-8 -*-
+
 from hashlib import sha512
 
 from .access import SALT
@@ -57,6 +60,8 @@ def add_tag(connection, name, parent_id):
     return cursor.lastrowid
 
 def add_tag_access(connection, fields):
+    '''Add access entrie for a user or a group,
+    depending on witch key is present in fields'''
     cursor = connection.cursor()
 
     if 'user_id' in fields:
